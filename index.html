@@ -1,25 +1,327 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
-  <title>Sharma General Store | Fresh groceries delivered to your door</title>
-  <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary: #2e72c6;
-      --primary-light: #3e8ef7;
-      --accent: #1bc47d;
-      --grey-bg: #f6f7fb;
-      --border: #e0e5ed;
-      --text: #1d2229;
-      --container: 100%;
-      --radius: 15px;
-      --shadow: 0 2px 12px rgba(32,51,86,0.07);
-      --cart-fg: #fff;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopLocal - Order Online</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --white: #ffffff;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); line-height: 1.5; padding-bottom: 80px; }
+
+        header { background: var(--white); padding: 2rem 1rem; text-align: center; border-bottom: 1px solid #e2e8f0; }
+        header h1 { color: var(--primary-dark); font-size: 1.8rem; margin-bottom: 0.5rem; }
+        header p { color: var(--text-light); font-size: 0.9rem; }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 1rem; }
+
+        /* Categories */
+        .categories { display: flex; gap: 0.5rem; overflow-x: auto; padding: 1rem 0; white-space: nowrap; scrollbar-width: none; }
+        .categories::-webkit-scrollbar { display: none; }
+        .cat-btn { 
+            background: var(--white); border: 1px solid #e2e8f0; padding: 0.5rem 1.2rem; 
+            border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: 0.2s;
+        }
+        .cat-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
+
+        /* Product Grid */
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+        .product-card { background: var(--white); border-radius: 12px; padding: 0.8rem; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+        .product-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin-bottom: 0.8rem; }
+        .product-card h3 { font-size: 0.95rem; margin-bottom: 0.2rem; height: 2.8rem; overflow: hidden; }
+        .product-card .price { font-weight: 700; color: var(--primary-dark); margin-bottom: 0.8rem; }
+        .add-btn { 
+            background: var(--primary); color: white; border: none; padding: 0.6rem; 
+            border-radius: 6px; width: 100%; cursor: pointer; font-weight: 600; margin-top: auto;
+        }
+
+        /* Cart UI */
+        #cart-toggle {
+            position: fixed; bottom: 20px; right: 20px; background: var(--primary-dark);
+            color: white; width: 60px; height: 60px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            cursor: pointer; z-index: 100;
+        }
+        #cart-count { position: absolute; top: 0; right: 0; background: #ef4444; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; }
+
+        .modal { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; 
+            align-items: flex-end; z-index: 200; 
+        }
+        .modal-content { 
+            background: var(--white); width: 100%; max-height: 90vh; 
+            border-radius: 20px 20px 0 0; padding: 1.5rem; overflow-y: auto;
+        }
+
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid #eee; }
+        .qty-controls { display: flex; align-items: center; gap: 10px; }
+        .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ddd; background: none; cursor: pointer; }
+
+        /* Checkout Form */
+        form input, form textarea { 
+            width: 100%; padding: 0.8rem; margin: 0.5rem 0; border: 1px solid #ddd; border-radius: 8px; 
+        }
+        .place-order-btn { 
+            background: var(--primary-dark); color: white; width: 100%; padding: 1rem; 
+            border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700; margin-top: 1rem;
+        }
+
+        .whatsapp-float {
+            position: fixed; bottom: 90px; right: 25px; background: #25d366;
+            color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.8rem;
+            text-decoration: none; display: flex; align-items: center; gap: 5px; box-shadow: var(--shadow);
+        }
+
+        @media (min-width: 768px) {
+            .products-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+            .modal { align-items: center; justify-content: center; }
+            .modal-content { max-width: 500px; border-radius: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1 id="shop-name">Loading...</h1>
+    <p id="shop-tagline"></p>
+    <p id="shop-location" style="font-size: 0.8rem; margin-top: 5px; opacity: 0.8;"></p>
+</header>
+
+<div class="container">
+    <div class="categories" id="category-bar">
+        <button class="cat-btn active" onclick="filterProducts('All')">All</button>
+    </div>
+
+    <div class="products-grid" id="product-grid">
+        </div>
+</div>
+
+<a href="#" id="wa-link" class="whatsapp-float" target="_blank">
+    <span>Chat on WhatsApp</span>
+</a>
+
+<div id="cart-toggle" onclick="toggleCart()">
+    🛒 <span id="cart-count">0</span>
+</div>
+
+<div id="cart-modal" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content: space-between; margin-bottom: 1rem;">
+            <h2>Your Cart</h2>
+            <button onclick="toggleCart()" style="border:none; background:none; font-size: 1.5rem;">&times;</button>
+        </div>
+        
+        <div id="cart-items-list"></div>
+        
+        <div style="margin-top: 1rem; border-top: 2px solid #eee; padding-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 1.2rem;">
+                <span>Total:</span>
+                <span id="cart-total">₹0</span>
+            </div>
+        </div>
+
+        <button class="place-order-btn" id="checkout-start-btn" onclick="showCheckout()">Checkout Now</button>
+
+        <form id="order-form" action="https://formspree.io/f/YOUR_FORM_ID_HERE" method="POST" style="display: none; margin-top: 1rem;">
+            <h3>Delivery Details</h3>
+            <input type="text" name="name" placeholder="Your Full Name" required>
+            <input type="tel" name="phone" placeholder="Phone Number" required>
+            <textarea name="address" rows="3" placeholder="Full Delivery Address" required></textarea>
+            <textarea name="instructions" rows="2" placeholder="Special Instructions (Optional)"></textarea>
+            
+            <input type="hidden" name="Order_Summary" id="order-summary-input">
+            <input type="hidden" name="_subject" value="New Order Received!">
+
+            <button type="submit" class="place-order-btn">Confirm & Place Order</button>
+        </form>
+        
+        <div id="success-msg" style="display:none; text-align: center; padding: 2rem 0;">
+            <h2 style="color: var(--primary-dark);">Order Placed! 🎉</h2>
+            <p style="margin: 1rem 0;">We will contact you on WhatsApp to confirm delivery.</p>
+            <button class="cat-btn" onclick="location.reload()">Back to Shop</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- CONFIGURATION ---
+    const shopDetails = {
+        name: "Sharma General Store",
+        tagline: "Fresh groceries delivered to your door",
+        location: "Raipur, Chhattisgarh",
+        phone: "918888888888", // Country code + number
+        email: "your-email@example.com"
+    };
+
+    const products = [
+        { id: 1, name: "Aashirvaad Atta (5kg)", price: 280, cat: "Groceries", img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=300&q=80", desc: "Premium whole wheat flour" },
+        { id: 2, name: "Amul Butter (500g)", price: 280, cat: "Dairy", img: "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=300&q=80", desc: "Fresh salted butter" },
+        { id: 3, name: "Maggi Noodles (Pack of 12)", price: 160, cat: "Snacks", img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=300&q=80", desc: "Instant masala noodles" },
+        { id: 4, name: "Tropicana Orange (1L)", price: 110, cat: "Beverages", img: "https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=300&q=80", desc: "100% pure orange juice" },
+        { id: 5, name: "Fortune Soyabean Oil (1L)", price: 145, cat: "Groceries", img: "https://images.unsplash.com/photo-1474979266404-7eaacbadcbaf?auto=format&fit=crop&w=300&q=80", desc: "Refined cooking oil" },
+        { id: 6, name: "Amul Taaza Milk (1L)", price: 66, cat: "Dairy", img: "https://images.unsplash.com/photo-1563636619-e910ef447d9d?auto=format&fit=crop&w=300&q=80", desc: "Homogenized toned milk" },
+        { id: 7, name: "Lays Classic Family Pack", price: 50, cat: "Snacks", img: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=300&q=80", desc: "Salted potato chips" },
+        { id: 8, name: "Coca Cola (2L)", price: 95, cat: "Beverages", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=300&q=80", desc: "Refreshing soft drink" }
+    ];
+
+    let cart = JSON.parse(localStorage.getItem('shop_cart')) || [];
+
+    // --- INITIALIZATION ---
+    document.getElementById('shop-name').innerText = shopDetails.name;
+    document.getElementById('shop-tagline').innerText = shopDetails.tagline;
+    document.getElementById('shop-location').innerText = shopDetails.location;
+    document.getElementById('wa-link').href = `https://wa.me/${shopDetails.phone}`;
+
+    // Load Categories
+    const cats = ['All', ...new Set(products.map(p => p.cat))];
+    const catBar = document.getElementById('category-bar');
+    catBar.innerHTML = cats.map(c => `<button class="cat-btn ${c==='All'?'active':''}" onclick="filterProducts('${c}', this)">${c}</button>`).join('');
+
+    function renderProducts(items) {
+        const grid = document.getElementById('product-grid');
+        grid.innerHTML = items.map(p => `
+            <div class="product-card">
+                <img src="${p.img}" alt="${p.name}" loading="lazy">
+                <h3>${p.name}</h3>
+                <p style="font-size: 0.75rem; color: #666; margin-bottom: 5px;">${p.desc}</p>
+                <p class="price">₹${p.price}</p>
+                <button class="add-btn" onclick="addToCart(${p.id})">Add to Cart</button>
+            </div>
+        `).join('');
     }
-    html,body {margin:0;padding:0;height:100%;font-family: 'Inter', Arial, sans-serif;color:var(--text);background:var(--grey-bg);}
-    body {min-height: 100vh;}
-    a {color:var(--primary);text-decoration:none;}
-    .container {max-width:520
-
+
+    function filterProducts(cat, btn) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        const filtered = cat === 'All' ? products : products.filter(p => p.cat === cat);
+        renderProducts(filtered);
+    }
+
+    // --- CART LOGIC ---
+    function addToCart(id) {
+        const item = products.find(p => p.id === id);
+        const existing = cart.find(c => c.id === id);
+        if(existing) {
+            existing.qty++;
+        } else {
+            cart.push({...item, qty: 1});
+        }
+        updateCart();
+    }
+
+    function updateCart() {
+        localStorage.setItem('shop_cart', JSON.stringify(cart));
+        document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.qty, 0);
+        renderCartItems();
+    }
+
+    function renderCartItems() {
+        const list = document.getElementById('cart-items-list');
+        const totalEl = document.getElementById('cart-total');
+        let total = 0;
+
+        if(cart.length === 0) {
+            list.innerHTML = `<p style="text-align:center; padding: 2rem;">Your cart is empty</p>`;
+            totalEl.innerText = `₹0`;
+            document.getElementById('checkout-start-btn').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('checkout-start-btn').style.display = 'block';
+        list.innerHTML = cart.map(item => {
+            total += (item.price * item.qty);
+            return `
+                <div class="cart-item">
+                    <div>
+                        <div style="font-weight:600">${item.name}</div>
+                        <div style="font-size:0.8rem; color:var(--text-light)">₹${item.price} x ${item.qty}</div>
+                    </div>
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+                        <span>${item.qty}</span>
+                        <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        totalEl.innerText = `₹${total}`;
+    }
+
+    function changeQty(id, delta) {
+        const item = cart.find(c => c.id === id);
+        item.qty += delta;
+        if(item.qty < 1) cart = cart.filter(c => c.id !== id);
+        updateCart();
+    }
+
+    function toggleCart() {
+        const modal = document.getElementById('cart-modal');
+        modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        renderCartItems();
+    }
+
+    function showCheckout() {
+        document.getElementById('checkout-start-btn').style.display = 'none';
+        document.getElementById('order-form').style.display = 'block';
+        
+        // Prepare the text summary for the email
+        let summary = "--- ORDER DETAILS ---\n";
+        cart.forEach(i => {
+            summary += `${i.name} | Qty: ${i.qty} | Price: ₹${i.price * i.qty}\n`;
+        });
+        summary += `\nGRAND TOTAL: ₹${cart.reduce((s, i) => s + (i.price * i.qty), 0)}`;
+        document.getElementById('order-summary-input').value = summary;
+    }
+
+    // --- FORM HANDLING ---
+    document.getElementById('order-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const btn = form.querySelector('button');
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (response.ok) {
+                cart = [];
+                localStorage.removeItem('shop_cart');
+                updateCart();
+                form.style.display = 'none';
+                document.getElementById('cart-items-list').style.display = 'none';
+                document.querySelector('h2').style.display = 'none';
+                document.getElementById('success-msg').style.display = 'block';
+            } else {
+                alert("Something went wrong. Please try again.");
+                btn.innerText = "Confirm & Place Order";
+                btn.disabled = false;
+            }
+        } catch (err) {
+            alert("Network error. Please check your connection.");
+            btn.innerText = "Confirm & Place Order";
+            btn.disabled = false;
+        }
+    };
+
+    // Start
+    renderProducts(products);
+    updateCart();
+</script>
+
+</body>
+</html>
